@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ShopifySharp.Filters;
 using Xunit;
 
 namespace ShopifySharp.Tests
@@ -60,8 +59,12 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            var policy = new SmartRetryExecutionPolicy(false);
+
             // Fulfillment API has a stricter rate limit when on a non-paid store.
-            FulfillmentService.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+            FulfillmentService.SetExecutionPolicy(policy);
+            FulfillmentEventService.SetExecutionPolicy(policy);
+            OrderService.SetExecutionPolicy(policy);
 
             // Create an order and fulfillment for count, list, get, etc. tests.
             var order = await CreateOrder();
@@ -146,7 +149,8 @@ namespace ShopifySharp.Tests
                 LineItems = CreatedOrders.First().LineItems
             };
 
-            fulfillment = await FulfillmentService.CreateAsync(orderId, fulfillment, false);
+            fulfillment.NotifyCustomer = false;
+            fulfillment = await FulfillmentService.CreateAsync(orderId, fulfillment);
 
             CreatedFulfillments.Add(fulfillment);
 

@@ -30,7 +30,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -104,6 +104,8 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+
             // Create one blog for methods like count, get, list, etc.
             await Create();
         }
@@ -137,7 +139,7 @@ namespace ShopifySharp.Tests
                 Commentable = Commentable,
             });
 
-            if (! skipAddToCreatedList)
+            if (!skipAddToCreatedList)
             {
                 Created.Add(blog);
             }

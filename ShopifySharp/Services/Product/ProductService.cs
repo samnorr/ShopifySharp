@@ -1,12 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using ShopifySharp.Filters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -26,32 +22,25 @@ namespace ShopifySharp
         /// Gets a count of all of the shop's products.
         /// </summary>
         /// <returns>The count of all products for the shop.</returns>
-        public virtual async Task<int> CountAsync(ProductFilter filter = null)
+        public virtual async Task<int> CountAsync(ProductCountFilter filter = null)
         {
-            var req = PrepareRequest("products/count.json");
-
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>("products/count.json", "count", filter);
+        }
+        
+        /// <summary>
+        /// Gets a list of up to 250 of the shop's products.
+        /// </summary>
+        public virtual async Task<ListResult<Product>> ListAsync(ListFilter<Product> filter)
+        {
+            return await ExecuteGetListAsync("products.json", "products", filter);
         }
 
         /// <summary>
         /// Gets a list of up to 250 of the shop's products.
         /// </summary>
-        /// <returns></returns>
-        public virtual async Task<IEnumerable<Product>> ListAsync(ProductFilter options = null)
+        public virtual async Task<ListResult<Product>> ListAsync(ProductListFilter filter = null)
         {
-            var req = PrepareRequest("products.json");
-
-            if (options != null)
-            {
-                req.QueryParams.AddRange(options.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Product>>(req, HttpMethod.Get, rootElement: "products");
+            return await ListAsync(filter?.AsListFilter());
         }
 
         /// <summary>
@@ -62,14 +51,7 @@ namespace ShopifySharp
         /// <returns>The <see cref="Product"/>.</returns>
         public virtual async Task<Product> GetAsync(long productId, string fields = null)
         {
-            var req = PrepareRequest($"products/{productId}.json");
-
-            if (string.IsNullOrEmpty(fields) == false)
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<Product>(req, HttpMethod.Get, rootElement: "product");
+            return await ExecuteGetAsync<Product>($"products/{productId}.json", "product", fields);
         }
 
         /// <summary>
@@ -95,8 +77,9 @@ namespace ShopifySharp
             {
                 product = body
             });
+            var response = await ExecuteRequestAsync<Product>(req, HttpMethod.Post, content, "product");
 
-            return await ExecuteRequestAsync<Product>(req, HttpMethod.Post, content, "product");
+            return response.Result;
         }
 
         /// <summary>
@@ -112,8 +95,9 @@ namespace ShopifySharp
             {
                 product = product
             });
+            var response = await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
 
-            return await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
+            return response.Result;
         }
 
         /// <summary>
@@ -143,8 +127,9 @@ namespace ShopifySharp
                     published = true
                 }
             });
+            var response = await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
 
-            return await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
+            return response.Result;
         }
 
         /// <summary>
@@ -163,8 +148,9 @@ namespace ShopifySharp
                     published = false
                 }
             });
+            var response = await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
 
-            return await ExecuteRequestAsync<Product>(req, HttpMethod.Put, content, "product");
+            return response.Result;
         }
     }
 }

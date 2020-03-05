@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using ShopifySharp.Converters;
 using ShopifySharp.Enums;
 using System;
 using System.Collections.Generic;
@@ -32,7 +34,7 @@ namespace ShopifySharp
         /// The weight of the item in grams.
         /// </summary>
         [JsonProperty("grams")]
-        public int? Grams { get; set; }
+        public long? Grams { get; set; }
 
         /// <summary>
         /// The price of the item before discounts have been applied.
@@ -132,6 +134,12 @@ namespace ShopifySharp
         public decimal? TotalDiscount { get; set; }
 
         /// <summary>
+        /// The total discount applied to the line item in shop and presentment currencies.
+        /// </summary>
+        [JsonProperty("total_discount_set")]
+        public PriceSet TotalDiscountSet { get; set; }
+
+        /// <summary>
         /// An ordered list of amounts allocated by discount applications. Each discount allocation is associated to a particular discount application.
         /// </summary>
         [JsonProperty("discount_allocations")]
@@ -142,19 +150,29 @@ namespace ShopifySharp
         /// Often used to provide product customization options.
         /// An array of <see cref="TaxLine"/> objects, each of which details the taxes applicable to this <see cref="LineItem"/>.
         /// </summary>
+        /// <remarks>
+        /// See https://github.com/nozzlegear/ShopifySharp/pull/461 for why the custom converter is required
+        /// </remarks>
         [JsonProperty("properties")]
+        [JsonConverter(typeof(NullOnErrorConverter))]
         public IEnumerable<LineItemProperty> Properties { get; set; }
 
-        [JsonProperty("variant_inventory_management")]
         /// <summary>
         /// This property is undocumented by Shopify.
         /// </summary>
+        [JsonProperty("variant_inventory_management")]
         public string VariantInventoryManagement { get; set; }
 
-        [JsonProperty("product_exists")]
         /// <summary>
         /// This property is undocumented by Shopify.
         /// </summary>
+        [JsonProperty("product_exists")]
         public bool? ProductExists { get; set; }
+
+        /// <summary>
+        /// The price of the line item in shop and presentment currencies
+        /// </summary>
+        [JsonProperty("price_set")]
+        public PriceSet PriceSet { get; set; }
     }
 }

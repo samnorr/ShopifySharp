@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
+using ShopifySharp.Filters;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -19,31 +22,19 @@ namespace ShopifySharp
         public BlogService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
 
         /// <summary>
-        /// Gets a list of all blogs.
+        /// Gets a list of up to 250 blogs belonging to the store.
         /// </summary>
-        /// <param name="sinceId">Restrict results to after the specified ID</param>
-        /// <param name="handle">Filter by Blog handle</param>
-        /// <param name="fields">comma-separated list of fields to include in the response</param>
-        public virtual async Task<IEnumerable<Blog>> ListAsync(long? sinceId = null, string handle = null, string fields = null)
+        public virtual async Task<ListResult<Blog>> ListAsync(ListFilter<Blog> filter = null)
         {
-            var request = PrepareRequest("blogs.json");
+            return await ExecuteGetListAsync("blogs.json", "blogs", filter);
+        }
 
-            if (sinceId.HasValue)
-            {
-                request.QueryParams.Add("since_id", sinceId.Value);
-            }
-
-            if (!string.IsNullOrEmpty(handle))
-            {
-                request.QueryParams.Add("handle", handle);
-            }
-
-            if (!string.IsNullOrEmpty(fields))
-            {
-                request.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<List<Blog>>(request, HttpMethod.Get, rootElement: "blogs");
+        /// <summary>
+        /// Gets a list of up to 250 blogs belonging to the store.
+        /// </summary>
+        public virtual async Task<ListResult<Blog>> ListAsync(BlogListFilter filter)
+        {
+            return await ListAsync(filter?.AsListFilter());
         }
 
         /// <summary>
@@ -51,9 +42,7 @@ namespace ShopifySharp
         /// </summary>
         public virtual async Task<int> CountAsync()
         {
-            var request = PrepareRequest("blogs/count.json");
-
-            return await ExecuteRequestAsync<int>(request, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>("blogs/count.json", "count");
         }
 
         /// <summary>
@@ -66,7 +55,7 @@ namespace ShopifySharp
             var request = PrepareRequest("blogs.json");
             var body = blog.ToDictionary();
 
-            if (metafields != null && metafields.Count() >= 1)
+            if (metafields != null && metafields.Any())
             {
                 body.Add("metafields", metafields);
             }
@@ -76,7 +65,8 @@ namespace ShopifySharp
                 blog = body
             });
 
-            return await ExecuteRequestAsync<Blog>(request, HttpMethod.Post, content, rootElement: "blog");
+            var response = await ExecuteRequestAsync<Blog>(request, HttpMethod.Post, content, rootElement: "blog");
+            return response.Result;
         }
 
         /// <summary>
@@ -100,7 +90,8 @@ namespace ShopifySharp
                 blog = body
             });
 
-            return await ExecuteRequestAsync<Blog>(request, HttpMethod.Put, content, "blog");
+            var response = await ExecuteRequestAsync<Blog>(request, HttpMethod.Put, content, "blog");
+            return response.Result;
         }
 
         /// <summary>
@@ -111,7 +102,8 @@ namespace ShopifySharp
         {
             var request = PrepareRequest($"blogs/{id}.json");
 
-            return await ExecuteRequestAsync<Blog>(request, HttpMethod.Get, rootElement: "blog");
+            var response = await ExecuteRequestAsync<Blog>(request, HttpMethod.Get, rootElement: "blog");
+            return response.Result;
         }
 
         /// <summary>

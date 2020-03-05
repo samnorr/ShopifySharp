@@ -31,7 +31,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -39,12 +39,12 @@ namespace ShopifySharp.Tests
         {
             var created = await Task.WhenAll(Enumerable.Range(0, 2).Select(i => Fixture.Create()));
             var ids = created.Select(o => o.Id.Value);
-            var list = await Fixture.Service.ListAsync(new OrderFilter()
+            var list = await Fixture.Service.ListAsync(new OrderListFilter()
             {
                 Ids = ids
             });
 
-            Assert.All(list, o => Assert.Contains(o.Id.Value, ids));
+            Assert.All(list.Items, o => Assert.Contains(o.Id.Value, ids));
         }
 
         [Fact]
@@ -167,6 +167,26 @@ namespace ShopifySharp.Tests
         }
 
         [Fact]
+        public async Task Gets_Metafields()
+        {
+            var order = await Fixture.Create();
+            bool threw = false;
+
+            try
+            {
+                await Fixture.Service.GetMetaFieldsAsync(order.Id.Value);
+            }
+            catch (ShopifyException ex)
+            {
+                Console.WriteLine($"{nameof(Gets_Metafields)} failed. {ex.Message}");
+
+                threw = true;
+            }
+
+            Assert.False(threw);
+        }
+
+        [Fact]
         public async Task Can_Be_Partially_Updated()
         {
             string newNote = "These notes were part of a partial update to this order.";
@@ -194,6 +214,8 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy(false));
+            
             // Create an order for count, list, get, etc. orders.
             await Create();
         }

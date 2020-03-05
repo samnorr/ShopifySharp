@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,9 +11,6 @@ namespace ShopifySharp
     /// </summary>
     public class FulfillmentServiceService : ShopifyService
     {
-        /// <summary>
-        /// Creates a new instance of <see cref="FulfillmentServiceService" />.
-        /// </summary>
         /// <param name="myShopifyUrl">The shop's *.myshopify.com URL.</param>
         /// <param name="shopAccessToken">An API access token for the shop.</param>
         public FulfillmentServiceService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
@@ -24,16 +20,9 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="scope">Set scope to all to retrieve all of the store's fulfillment services</param>
         /// <returns>The list of fulfillment services matching the filter.</returns>
-        public virtual async Task<IEnumerable<FulfillmentServiceEntity>> ListAsync(string scope = null)
+        public virtual async Task<IEnumerable<FulfillmentServiceEntity>> ListAsync(FulfillmentServiceListFilter filter = null)
         {
-            var req = PrepareRequest($"fulfillment_services.json");
-
-            if (!string.IsNullOrEmpty(scope))
-            {
-                req.QueryParams.Add("scope", scope);
-            }
-
-            return await ExecuteRequestAsync<List<FulfillmentServiceEntity>>(req, HttpMethod.Get, rootElement: "fulfillment_services");
+            return await ExecuteGetAsync<List<FulfillmentServiceEntity>>("fulfillment_services.json", "fulfillment_services", filter);
         }
 
         /// <summary>
@@ -44,14 +33,7 @@ namespace ShopifySharp
         /// <returns>The <see cref="Fulfillment"/>.</returns>
         public virtual async Task<FulfillmentServiceEntity> GetAsync(long fulfillmentServiceId, string fields = null)
         {
-            var req = PrepareRequest($"fulfillment_services/{fulfillmentServiceId}.json");
-
-            if (!string.IsNullOrEmpty(fields))
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<FulfillmentServiceEntity>(req, HttpMethod.Get, rootElement: "fulfillment_service");
+            return await ExecuteGetAsync<FulfillmentServiceEntity>($"fulfillment_services/{fulfillmentServiceId}.json", "fulfillment_service", fields);
         }
 
         /// <summary>
@@ -70,7 +52,8 @@ namespace ShopifySharp
                 fulfillment_service = body
             });
 
-            return await ExecuteRequestAsync<FulfillmentServiceEntity>(req, HttpMethod.Post, content, "fulfillment_service");
+            var response = await ExecuteRequestAsync<FulfillmentServiceEntity>(req, HttpMethod.Post, content, "fulfillment_service");
+            return response.Result;
         }
 
         /// <summary>
@@ -89,7 +72,8 @@ namespace ShopifySharp
                 fulfillment_service = body
             });
 
-            return await ExecuteRequestAsync<FulfillmentServiceEntity>(req, HttpMethod.Put, content, "fulfillment_service");
+            var response = await ExecuteRequestAsync<FulfillmentServiceEntity>(req, HttpMethod.Put, content, "fulfillment_service");
+            return response.Result;
         }
 
         /// <summary>

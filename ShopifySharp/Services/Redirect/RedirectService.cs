@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System;
+using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -18,47 +20,32 @@ namespace ShopifySharp
         /// <param name="myShopifyUrl">The shop's *.myshopify.com URL.</param>
         /// <param name="shopAccessToken">An API access token for the shop.</param>
         public RedirectService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
-
+        
         /// <summary>
         /// Gets a count of all of the shop's redirects.
         /// </summary>
-        /// <param name="path">An optional parameter that filters the result to redirects with the given path.</param>
-        /// <param name="target">An optional parameter that filters the result to redirects with the given target.</param>
-        /// <returns>The count of all redirects for the shop.</returns>
-        public virtual async Task<int> CountAsync(string path = null, string target = null)
+        /// <param name="filter">Options for filtering the result.</param>
+        public virtual async Task<int> CountAsync(RedirectCountFilter filter = null)
         {
-            var req = PrepareRequest("redirects/count.json");
-
-            if (!string.IsNullOrEmpty(path))
-            {
-                req.QueryParams.Add("path", path);
-            }
-
-            if (!string.IsNullOrEmpty(target))
-            {
-                req.QueryParams.Add("target", target);
-            }
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>("redirects/count.json", "count", filter);
         }
 
         /// <summary>
         /// Gets a list of up to 250 of the shop's redirects.
         /// </summary>
-        /// <param name="filter">An optional filter that restricts the results.</param>
-        /// <returns>The list of <see cref="Redirect"/>.</returns>
-        public virtual async Task<IEnumerable<Redirect>> ListAsync(RedirectFilter filter = null)
+        public virtual async Task<ListResult<Redirect>> ListAsync(ListFilter<Redirect> filter)
         {
-            var req = PrepareRequest("redirects.json");
-
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Redirect>>(req, HttpMethod.Get, rootElement: "redirects");
+            return await ExecuteGetListAsync("redirects.json", "redirects", filter);
         }
 
+        /// <summary>
+        /// Gets a list of up to 250 of the shop's redirects.
+        /// </summary>
+        public virtual async Task<ListResult<Redirect>> ListAsync(RedirectListFilter filter = null)
+        {
+            return await ListAsync(filter?.AsListFilter());
+        }
+        
         /// <summary>
         /// Retrieves the <see cref="Redirect"/> with the given id.
         /// </summary>
@@ -74,7 +61,9 @@ namespace ShopifySharp
                 req.QueryParams.Add("fields", fields);
             }
 
-            return await ExecuteRequestAsync<Redirect>(req, HttpMethod.Get, rootElement: "redirect");
+            var response = await ExecuteRequestAsync<Redirect>(req, HttpMethod.Get, rootElement: "redirect");
+
+            return response.Result;
         }
 
         /// <summary>
@@ -91,8 +80,9 @@ namespace ShopifySharp
             {
                 redirect = redirect
             });
+            var response = await ExecuteRequestAsync<Redirect>(req, HttpMethod.Post, content, "redirect");
 
-            return await ExecuteRequestAsync<Redirect>(req, HttpMethod.Post, content, "redirect");
+            return response.Result;
         }
 
         /// <summary>
@@ -108,8 +98,9 @@ namespace ShopifySharp
             {
                 redirect = redirect
             });
+            var response = await ExecuteRequestAsync<Redirect>(req, HttpMethod.Put, content, "redirect");
 
-            return await ExecuteRequestAsync<Redirect>(req, HttpMethod.Put, content, "redirect");
+            return response.Result;
         }
 
         /// <summary>

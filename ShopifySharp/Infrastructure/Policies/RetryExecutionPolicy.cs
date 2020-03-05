@@ -12,7 +12,14 @@ namespace ShopifySharp
     {
         private static readonly TimeSpan RETRY_DELAY = TimeSpan.FromMilliseconds(500);
 
-        public async Task<T> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync)
+        private readonly bool _retryOnlyIfLeakyBucketFull;
+
+        public RetryExecutionPolicy(bool retryOnlyIfLeakyBucketFull = true)
+        {
+            _retryOnlyIfLeakyBucketFull = retryOnlyIfLeakyBucketFull;
+        }
+
+        public async Task<RequestResult<T>> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync)
         {
             while (true)
             {
@@ -22,10 +29,13 @@ namespace ShopifySharp
                 {
                     var fullResult = await executeRequestAsync(request);
 
-                    return fullResult.Result;
+                    return fullResult;
                 }
-                catch (ShopifyRateLimitException)
+                catch (ShopifyRateLimitException ex) when (ex.Reason == ShopifyRateLimitReason.BucketFull || !_retryOnlyIfLeakyBucketFull)
                 {
+                    //Only retry if breach caused by full bucket
+                    //Other limits will bubble the exception because it's not clear how long the program should wait
+                    //Even if there is a Retry-After header, we probably don't want the thread to sleep for potentially many hours
                     await Task.Delay(RETRY_DELAY);
                 }
             }

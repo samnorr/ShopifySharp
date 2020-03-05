@@ -19,8 +19,9 @@ namespace ShopifySharp
         public virtual async Task<IEnumerable<Policy>> ListAsync()
         {
             var request = PrepareRequest("policies.json");
+            var response = await ExecuteRequestAsync<List<Policy>>(request, HttpMethod.Get, rootElement: "policies");
 
-            return await ExecuteRequestAsync<List<Policy>>(request, HttpMethod.Get, rootElement: "policies");
+            return response.Result;
         }
     }
 }

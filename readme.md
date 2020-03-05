@@ -53,11 +53,36 @@ If you're using .NET Core, you can use the `dotnet` command from your favorite s
 dotnet add package shopifysharp
 ```
 
-# Version 4.0.0
+# Version 5.0.0
 
-Version 4.0.0 is a major update to ShopifySharp, it contains breaking changes by removing the `Shopify` prefix from almost every class, interface and object (the exception being `ShopifyException` and `ShopifyRateLimitException`. On top of that, every single entity property has been made nullable to both prevent deserialization errors that have plagued us humble C# developers since 1.0.0.
+**A complete migration guide for going from v4.x to v5.x is coming soon!** The biggest change by far is the way you'll list objects in v5. Shopify has implemented a sort of "linked list" pagination, which means you _cannot_ request arbitrary pages any longer (e.g. "give me page 5 of orders").
 
-Version 4.0.0 contains a bunch of great enhancements, though. Chiefly, it adds support for .NET Core apps! In addition, the library now supports sending partial classes (thanks to making properties nullable) when creating or updating a Shopify object.
+Instead, you now have to walk through each page, following the link from one page to the next, to get where you need to go. As long as Shopify is caching the results, this should improve the speed with which your application can list large swathes of objects at once (e.g. when importing all of a user's orders into your application). However, this makes things like letting your users navigate to an arbitrary page of orders in your app impossible. At best, you'll only be able to show links to the next page or previous page.
+
+An example for listing all orders on a Shopify shop:
+
+```cs
+var allOrders = new List<Order>();
+var service = new OrderService(domain, accessToken);
+var page = await service.ListAsync(new OrderListFilter
+{
+    Limit = 250,
+});
+
+while (true)
+{
+    allOrders.AddRange(page.Items);
+
+    if (!page.HasNextPage)
+    {
+        break;
+    }
+
+    page = await service.ListAsync(page.GetNextPageFilter());
+}
+```
+
+Again, a more complete migration guide is coming soon and will be linked right here. In the meantime, please [check this issue for commonly asked questions about v5.0](https://github.com/nozzlegear/ShopifySharp/issues/462).
 
 # Frequently Asked Questions
 
@@ -2168,6 +2193,36 @@ int giftCardCount = await service.CountAsync();
 ```c#
 var service =  new GiftCardService(myShopifyUrl, shopAccessToken);
 IEnumerable<GiftCard> giftCards = await Service.SearchAsync("code: abc-bcd-efg");
+```
+
+## Gift Card Adjustments
+
+Developers can create adjustments on existing gift cards with the `GiftCardAdjustmentService`.
+
+**Gift Cards require a Shopify Plus subscription and also the Gift Card Adjustment endpoint needs to be enabled on your store, contact Shopify plus support for more info.**
+
+### Listing Gift Card Adjustments
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCardAdjustments = await service.ListAsync(giftCardId);
+```
+
+### Creating a Gift Card Adjustment
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCard = await service.CreateAsync(giftCardId, new GiftCardAdjustment()
+{
+    Amount = -1.00,
+});
+```
+
+### Getting a Gift Card Adjustment
+
+```cs
+var service = new GiftCardAdjustmentService(myShopifyUrl, shopAccessToken);
+var giftCardAdjustment = await service.GetAsync(giftCardId, adjustmentId):
 ```
 
 ## Price Rules

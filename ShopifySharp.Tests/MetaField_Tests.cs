@@ -30,7 +30,7 @@ namespace ShopifySharp.Tests
         public async Task Counts_Metafields_On_Resources()
         {
             var count = await Fixture.Service.CountAsync(Fixture.ResourceId, Fixture.ResourceType);
-            
+
             Assert.True(count > 0);
         }
 
@@ -38,7 +38,7 @@ namespace ShopifySharp.Tests
         public async Task Counts_Metafields_On_Resources_And_Parent()
         {
             var count = await Fixture.Service.CountAsync(Fixture.ChildResourceId, Fixture.ChildResourceType, Fixture.ResourceId, Fixture.ResourceType);
-            
+
             Assert.True(count > 0);
         }
 
@@ -46,27 +46,21 @@ namespace ShopifySharp.Tests
         public async Task Lists_Metafields()
         {
             var list = await Fixture.Service.ListAsync();
-            list = list.Where(i=>i.Namespace == Fixture.Namespace && i.Description == Fixture.Description);
-
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Any(i => i.Namespace == Fixture.Namespace && i.Description == Fixture.Description));
         }
 
         [Fact]
         public async Task Lists_Metafields_On_Resources()
         {
             var list = await Fixture.Service.ListAsync(Fixture.ResourceId, Fixture.ResourceType);
-            list = list.Where(i=>i.Namespace == Fixture.Namespace && i.Description == Fixture.Description);
-
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Any(i => i.Namespace == Fixture.Namespace && i.Description == Fixture.Description));
         }
 
         [Fact]
         public async Task Lists_Metafields_On_Resources_And_Parent()
         {
             var list = await Fixture.Service.ListAsync(Fixture.ChildResourceId, Fixture.ChildResourceType, Fixture.ResourceId, Fixture.ResourceType);
-            list = list.Where(i=>i.Namespace == Fixture.Namespace && i.Description == Fixture.Description);
-            
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Any(i => i.Namespace == Fixture.Namespace && i.Description == Fixture.Description));
         }
 
         [Fact]
@@ -93,7 +87,7 @@ namespace ShopifySharp.Tests
         public async Task Creates_Metafields()
         {
             var created = await Fixture.Create();
-            
+
             Assert.NotNull(created);
             Assert.Equal(Fixture.Namespace, created.Namespace);
             Assert.Equal(Fixture.Description, created.Description);
@@ -118,7 +112,7 @@ namespace ShopifySharp.Tests
         [Fact]
         public async Task Creates_Metafields_On_Resources_And_Parent()
         {
-            var created = await Fixture.Create(Fixture.ChildResourceId,Fixture.ChildResourceType,Fixture.ResourceId, Fixture.ResourceType);
+            var created = await Fixture.Create(Fixture.ChildResourceId, Fixture.ChildResourceType, Fixture.ResourceId, Fixture.ResourceType);
 
             Assert.NotNull(created);
             Assert.Equal(Fixture.Namespace, created.Namespace);
@@ -187,7 +181,7 @@ namespace ShopifySharp.Tests
         public async Task Updates_Metafields_On_Resources_And_Parent()
         {
             string value = "10";
-            var created = await Fixture.Create(Fixture.ChildResourceId,Fixture.ChildResourceType,Fixture.ResourceId, Fixture.ResourceType);
+            var created = await Fixture.Create(Fixture.ChildResourceId, Fixture.ChildResourceType, Fixture.ResourceId, Fixture.ResourceType);
             long id = created.Id.Value;
 
             created.Value = value;
@@ -206,6 +200,8 @@ namespace ShopifySharp.Tests
     {
         public MetaFieldService Service { get; } = new MetaFieldService(Utils.MyShopifyUrl, Utils.AccessToken);
 
+        public ProductService ProductService { get; } = new ProductService(Utils.MyShopifyUrl, Utils.AccessToken);
+
         public List<ShopifySharp.MetaField> Created { get; } = new List<ShopifySharp.MetaField>();
 
         public string Namespace => "testing";
@@ -220,10 +216,15 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            var policy = new SmartRetryExecutionPolicy();
+
+            Service.SetExecutionPolicy(policy);
+            ProductService.SetExecutionPolicy(policy);
+
             // Get a product to add metafields to.
-            var products = await new ProductService(Utils.MyShopifyUrl, Utils.AccessToken).ListAsync();
-            ResourceId = products.First().Id.Value;
-            ChildResourceId = products.First().Variants.First().Id.Value;
+            var products = await ProductService.ListAsync();
+            ResourceId = products.Items.First().Id.Value;
+            ChildResourceId = products.Items.First().Variants.First().Id.Value;
 
             // Create a metafield for use in count, list, get, etc. tests.
             await Create();
@@ -263,7 +264,7 @@ namespace ShopifySharp.Tests
                 Description = Description,
             });
 
-            if (! skipAddToCreatedList)
+            if (!skipAddToCreatedList)
             {
                 Created.Add(obj);
             }

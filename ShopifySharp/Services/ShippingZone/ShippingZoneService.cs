@@ -1,7 +1,9 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System;
+using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ShopifySharp.Filters;
 
 namespace ShopifySharp
 {
@@ -18,20 +20,20 @@ namespace ShopifySharp
         public ShippingZoneService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
 
         /// <summary>
-        /// Retrieves a list of all <see cref="ShippingZone"/> objects.
+        /// Retrieves a list of all shipping zones. 
         /// </summary>
-        /// <param name="fields">A comma-separated list of fields to return.</param>
-        /// <returns>The list of <see cref="ShippingZone"/> objects.</returns>
-        public virtual async Task<IEnumerable<ShippingZone>> ListAsync(string fields = null)
+        public virtual async Task<IEnumerable<ShippingZone>> ListAsync(ShippingZoneListFilter filter = null)
         {
             var req = PrepareRequest("shipping_zones.json");
-
-            if (string.IsNullOrEmpty(fields) == false)
+            
+            if (filter != null)
             {
-                req.QueryParams.Add("fields", fields);
+                req.QueryParams.AddRange(filter.ToQueryParameters());
             }
+            
+            var response = await ExecuteRequestAsync<List<ShippingZone>>(req, HttpMethod.Get, rootElement: "shipping_zones");
 
-            return await ExecuteRequestAsync<List<ShippingZone>>(req, HttpMethod.Get, rootElement: "shipping_zones");
+            return response.Result;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System;
+using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
@@ -27,9 +28,7 @@ namespace ShopifySharp
         /// <returns>The list of fulfillment events for the given fulfillment.</returns>
         public virtual async Task<IEnumerable<FulfillmentEvent>> ListAsync(long orderId, long fulfillmentId)
         {
-            var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}/events.json");
-
-            return await ExecuteRequestAsync<List<FulfillmentEvent>>(req, HttpMethod.Get, rootElement: "fulfillment_events");
+            return await ExecuteGetAsync<IEnumerable<FulfillmentEvent>>($"orders/{orderId}/fulfillments/{fulfillmentId}/events.json", "fulfillment_events");
         }
 
         /// <summary>
@@ -41,9 +40,7 @@ namespace ShopifySharp
         /// <returns>The <see cref="FulfillmentEvent"/>.</returns>
         public virtual async Task<FulfillmentEvent> GetAsync(long orderId, long fulfillmentId, long fulfillmentEventId)
         {
-            var req = PrepareRequest($"orders/{orderId}/fulfillments/{fulfillmentId}/events/{fulfillmentEventId}.json");
-
-            return await ExecuteRequestAsync<FulfillmentEvent>(req, HttpMethod.Get, rootElement: "fulfillment_event");
+            return await ExecuteGetAsync<FulfillmentEvent>($"orders/{orderId}/fulfillments/{fulfillmentId}/events/{fulfillmentEventId}.json", "fulfillment_event");
         }
 
         /// <summary>
@@ -60,7 +57,8 @@ namespace ShopifySharp
                 @event
             });
 
-            return await ExecuteRequestAsync<FulfillmentEvent>(req, HttpMethod.Post, content, "fulfillment_event");
+            var response = await ExecuteRequestAsync<FulfillmentEvent>(req, HttpMethod.Post, content, "fulfillment_event");
+            return response.Result;
         }
 
         /// <summary>

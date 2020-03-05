@@ -1,8 +1,10 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -21,17 +23,9 @@ namespace ShopifySharp
         /// <summary>
         /// Gets a list of up to 250 of the shop's themes.
         /// </summary>
-        /// <returns></returns>
-        public virtual async Task<IEnumerable<Theme>> ListAsync(ListFilter filter = null)
+        public virtual async Task<IEnumerable<Theme>> ListAsync(ThemeListFilter filter = null)
         {
-            var req = PrepareRequest("themes.json");
-
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Theme>>(req, HttpMethod.Get, rootElement: "themes");
+            return await ExecuteGetAsync<IEnumerable<Theme>>("themes.json", "themes", filter);
         }
 
         /// <summary>
@@ -49,7 +43,9 @@ namespace ShopifySharp
                 req.QueryParams.Add("fields", fields);
             }
 
-            return await ExecuteRequestAsync<Theme>(req, HttpMethod.Get, rootElement: "theme");
+            var response = await ExecuteRequestAsync<Theme>(req, HttpMethod.Get, rootElement: "theme");
+
+            return response.Result;
         }
 
         private async Task<Theme> _CreateAsync(Theme theme, string sourceUrl = null)
@@ -66,8 +62,9 @@ namespace ShopifySharp
             {
                 theme = body
             });
+            var response = await ExecuteRequestAsync<Theme>(req, HttpMethod.Post, content, "theme");
 
-            return await ExecuteRequestAsync<Theme>(req, HttpMethod.Post, content, "theme");
+            return response.Result;
         }
 
         /// <summary>
@@ -107,8 +104,9 @@ namespace ShopifySharp
             {
                 theme = theme
             });
+            var response = await ExecuteRequestAsync<Theme>(req, HttpMethod.Put, content, "theme");
 
-            return await ExecuteRequestAsync<Theme>(req, HttpMethod.Put, content, "theme");
+            return response.Result;
         }
 
         /// <summary>

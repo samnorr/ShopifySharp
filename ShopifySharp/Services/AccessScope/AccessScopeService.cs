@@ -1,6 +1,4 @@
-﻿using ShopifySharp.Filters;
-using ShopifySharp.Infrastructure;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -18,13 +16,15 @@ namespace ShopifySharp
         /// <param name="shopAccessToken">An API access token for the shop.</param>
         public AccessScopeService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
 
+        //oauth endpoints don't support versioning
+        protected override bool SupportsAPIVersioning => false;
+
         /// <summary>
         /// Retrieves a list of access scopes associated to the access token.
         /// </summary>
         public virtual async Task<IEnumerable<AccessScope>> ListAsync()
         {
-            var req = PrepareRequest($"oauth/access_scopes.json");
-            return await ExecuteRequestAsync<List<AccessScope>>(req, HttpMethod.Get, rootElement: "access_scopes");
+            return await ExecuteGetAsync<IEnumerable<AccessScope>>("oauth/access_scopes.json", "access_scopes");
         }
     }
 }

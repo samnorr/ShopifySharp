@@ -1,6 +1,8 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ShopifySharp.Filters;
 using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
@@ -27,7 +29,8 @@ namespace ShopifySharp
             var req = PrepareRequest("application_charges.json");
             var content = new JsonContent(new { application_charge = charge });
 
-            return await ExecuteRequestAsync<Charge>(req, HttpMethod.Post, content, "application_charge");
+            var response = await ExecuteRequestAsync<Charge>(req, HttpMethod.Post, content, "application_charge");
+            return response.Result;
         }
 
         /// <summary>
@@ -45,30 +48,17 @@ namespace ShopifySharp
                 req.QueryParams.Add("fields", fields);
             }
 
-            return await ExecuteRequestAsync<Charge>(req, HttpMethod.Get, rootElement: "application_charge");
+            var response = await ExecuteRequestAsync<Charge>(req, HttpMethod.Get, rootElement: "application_charge");
+            return response.Result;
         }
 
         /// <summary>
         /// Retrieves a list of all past and present <see cref="Charge"/> objects.
         /// </summary>
-        /// <param name="sinceId">Restricts results to any charge after the given id.</param>
-        /// <param name="fields">A comma-separated list of fields to return.</param>
-        /// <returns>The list of <see cref="Charge"/> objects.</returns>
-        public virtual async Task<IEnumerable<Charge>> ListAsync(long? sinceId = null, string fields = null)
+        /// <param name="filter">Options for filtering the list.</param>
+        public virtual async Task<IEnumerable<Charge>> ListAsync(ChargeListFilter filter = null)
         {
-            var req = PrepareRequest("application_charges.json");
-
-            if (string.IsNullOrEmpty(fields) == false)
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            if (sinceId.HasValue)
-            {
-                req.QueryParams.Add("since_id", sinceId);
-            }
-
-            return await ExecuteRequestAsync<List<Charge>>(req, HttpMethod.Get, rootElement: "application_charges");
+            return await ExecuteGetAsync< IEnumerable < Charge >>("application_charges.json", "application_charges", filter);
         }
 
         /// <summary>

@@ -22,7 +22,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -120,6 +120,8 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+
             // Create one for count, list, get, etc. orders.
             await Create(Guid.NewGuid().ToString());
         }

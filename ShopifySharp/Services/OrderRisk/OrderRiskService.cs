@@ -1,7 +1,10 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ShopifySharp.Filters;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -21,11 +24,10 @@ namespace ShopifySharp
         /// Gets a list of all order risks for an order.
         /// </summary>
         /// <param name="orderId">The order the risks belong to.</param>
-        public virtual async Task<IEnumerable<OrderRisk>> ListAsync(long orderId)
+        /// <param name="filter">Options for filtering the request.</param>
+        public virtual async Task<ListResult<OrderRisk>> ListAsync(long orderId, ListFilter<OrderRisk> filter = null)
         {
-            var req = PrepareRequest($"orders/{orderId}/risks.json");
-            
-            return await ExecuteRequestAsync<List<OrderRisk>>(req, HttpMethod.Get, rootElement: "risks");
+            return await ExecuteGetListAsync($"orders/{orderId}/risks.json", "risks", filter);
         }
         
         /// <summary>
@@ -35,9 +37,7 @@ namespace ShopifySharp
         /// <param name="riskId">The id of the risk to retrieve.</param>
         public virtual async Task<OrderRisk> GetAsync(long orderId, long riskId)
         {
-            var req = PrepareRequest($"orders/{orderId}/risks/{riskId}.json");
-            
-            return await ExecuteRequestAsync<OrderRisk>(req, HttpMethod.Get, rootElement: "risk");
+            return await ExecuteGetAsync<OrderRisk>($"orders/{orderId}/risks/{riskId}.json", "risk");
         }
         
         /// <summary>
@@ -52,8 +52,9 @@ namespace ShopifySharp
             {
                 risk = risk
             });
-            
-            return await ExecuteRequestAsync<OrderRisk>(req, HttpMethod.Post, content, "risk");
+            var response = await ExecuteRequestAsync<OrderRisk>(req, HttpMethod.Post, content, "risk");
+
+            return response.Result;
         }
 
         /// <summary>
@@ -70,7 +71,8 @@ namespace ShopifySharp
                 risk = risk
             });
 
-            return await ExecuteRequestAsync<OrderRisk>(req, HttpMethod.Put, content, "risk");
+            var response = await ExecuteRequestAsync<OrderRisk>(req, HttpMethod.Put, content, "risk");
+            return response.Result;
         }
 
         /// <summary>

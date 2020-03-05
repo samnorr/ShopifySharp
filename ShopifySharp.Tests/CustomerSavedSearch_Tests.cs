@@ -31,7 +31,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Any());
+            Assert.True(list.Items.Any());
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace ShopifySharp.Tests
         public async Task Creates_CustomerSavedSearch()
         {
             var customerSavedSearch = await Fixture.Create();
-            
+
             Assert.NotNull(customerSavedSearch.Name);
             Assert.Equal(Fixture.Name, customerSavedSearch.Name);
             Assert.Equal(Fixture.Query, customerSavedSearch.Query);
@@ -90,28 +90,6 @@ namespace ShopifySharp.Tests
             created.Id = id;
 
             Assert.Equal(name, updated.Name);
-        }
-
-        [Fact]
-        public async Task Searches_For_CustomerSavedSearch()
-        {
-            // It takes anywhere between 3 seconds to 30 seconds for Shopify to index new CustomerSavedSearch for searches.
-            // Rather than putting a 20 second Thread.Sleep in the test, we'll just assume it's successful if the
-            // test doesn't throw an exception.
-            bool threw = false;
-
-            try
-            {
-                var search = await Fixture.Service.SearchAsync("-notes");
-            }
-            catch (ShopifyException ex)
-            {
-                Console.WriteLine($"{nameof(Searches_For_CustomerSavedSearch)} failed. {ex.Message}");
-
-                threw = true;
-            }
-
-            Assert.False(threw);
         }
 
         [Fact]
@@ -139,9 +117,9 @@ namespace ShopifySharp.Tests
 
             var savedSearch = await Fixture.Create();
 
-            var customersInSearch = await Fixture.Service.GetCustomersFromSavedSearch(savedSearch.Id.Value);
+            var customersInSearch = await Fixture.Service.GetCustomersFromSavedSearchAsync(savedSearch.Id.Value);
             var actualCustomer = customersInSearch.Single();
-            
+
             Assert.Equal(expectedCustomer.Id, actualCustomer.Id);
             Assert.Equal(customerFixture.FirstName, actualCustomer.FirstName);
             Assert.Equal(customerFixture.LastName, actualCustomer.LastName);
@@ -160,6 +138,8 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+
             // Create one customer for use with count, list, get, etc. tests.
             await Create();
         }

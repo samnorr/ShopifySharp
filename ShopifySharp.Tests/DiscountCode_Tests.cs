@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using ShopifySharp.Filters;
 using Xunit;
 
 namespace ShopifySharp.Tests
@@ -31,9 +32,12 @@ namespace ShopifySharp.Tests
         [Fact]
         public async Task Lists_DiscountCodes()
         {
-            var list = await Fixture.DiscountCodeService.ListAsync(Fixture.CreatedPriceRules.First().Id.Value);
+            var list = await Fixture.DiscountCodeService.ListAsync(Fixture.CreatedPriceRules.First().Id.Value, new PriceRuleDiscountCodeListFilter
+            {
+                Limit = 5
+            });
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -42,7 +46,7 @@ namespace ShopifySharp.Tests
             var obj = await Fixture.DiscountCodeService.GetAsync(Fixture.CreatedPriceRules.First().Id.Value, Fixture.CreatedDiscountCodes.First().Id.Value);
 
             Assert.NotNull(obj);
-            Assert.Equal(Fixture.Code, obj.Code);            
+            Assert.Equal(Fixture.Code, obj.Code);
         }
 
         [Fact]
@@ -59,15 +63,22 @@ namespace ShopifySharp.Tests
     }
 
     public class DiscountCodes_Tests_Fixture : IAsyncLifetime
-    {        
+    {
         public DiscountCodeService DiscountCodeService { get; } = new DiscountCodeService(Utils.MyShopifyUrl, Utils.AccessToken);
+
         public PriceRuleService PriceRuleService { get; } = new PriceRuleService(Utils.MyShopifyUrl, Utils.AccessToken);
 
         public List<PriceRuleDiscountCode> CreatedDiscountCodes { get; } = new List<PriceRuleDiscountCode>();
-        public List<PriceRule> CreatedPriceRules { get; } = new List<PriceRule>();        
+
+        public List<PriceRule> CreatedPriceRules { get; } = new List<PriceRule>();
 
         public async Task InitializeAsync()
         {
+            var policy = new SmartRetryExecutionPolicy();
+
+            DiscountCodeService.SetExecutionPolicy(policy);
+            PriceRuleService.SetExecutionPolicy(policy);
+
             // Create one for count, list, get, etc. orders.
             await Create(Code);
         }

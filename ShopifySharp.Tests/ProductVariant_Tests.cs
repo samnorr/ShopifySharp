@@ -32,7 +32,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync(Fixture.ProductId);
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -81,12 +81,14 @@ namespace ShopifySharp.Tests
         [Fact]
         public async Task Updates_Variants()
         {
-            decimal newPrice = (decimal) 11.22;
+            decimal newPrice = (decimal)11.22;
             var created = await Fixture.Create();
             long id = created.Id.Value;
 
             created.Price = newPrice;
             created.Id = null;
+            // Must set variant.InventoryQuantity to null as it is now read-only. Sending the quantity accidentally will result in an exception.
+            created.InventoryQuantity = null;
 
             var updated = await Fixture.Service.UpdateAsync(id, created);
 
@@ -101,6 +103,8 @@ namespace ShopifySharp.Tests
     {
         public ProductVariantService Service { get; } = new ProductVariantService(Utils.MyShopifyUrl, Utils.AccessToken);
 
+        public ProductService ProductService { get; } = new ProductService(Utils.MyShopifyUrl, Utils.AccessToken);
+
         public List<ProductVariant> Created { get; } = new List<ProductVariant>();
 
         public decimal Price => 123.45m;
@@ -109,11 +113,16 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            var policy = new SmartRetryExecutionPolicy();
+
+            Service.SetExecutionPolicy(policy);
+            ProductService.SetExecutionPolicy(policy);
+
             // Get a product id to use with these tests.
-            ProductId = (await new ProductService(Utils.MyShopifyUrl, Utils.AccessToken).ListAsync(new ProductFilter()
+            ProductId = (await ProductService.ListAsync(new ProductListFilter()
             {
                 Limit = 1
-            })).First().Id.Value;
+            })).Items.First().Id.Value;
 
             // Create one for use with count, list, get, etc. tests.
             await Create();
@@ -123,9 +132,9 @@ namespace ShopifySharp.Tests
         {
             foreach (var obj in Created)
             {
-                if (! obj.Id.HasValue) 
+                if (!obj.Id.HasValue)
                 {
-                    continue; 
+                    continue;
                 }
 
                 try
@@ -153,7 +162,7 @@ namespace ShopifySharp.Tests
                 Price = Price
             });
 
-            if (! skipAddToCreatedList)
+            if (!skipAddToCreatedList)
             {
                 Created.Add(obj);
             }

@@ -30,7 +30,7 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace ShopifySharp.Tests
             // Reset the id so the Fixture can properly delete this object.
             created.Id = id;
 
-            Assert.Equal(newValue, updated.DisplayScope);   
+            Assert.Equal(newValue, updated.DisplayScope);
         }
     }
 
@@ -110,6 +110,8 @@ namespace ShopifySharp.Tests
 
         public async Task InitializeAsync()
         {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+
             // Create one collection for use with count, list, get, etc. tests.
             await Create();
         }
@@ -144,7 +146,7 @@ namespace ShopifySharp.Tests
                 DisplayScope = Scope,
             });
 
-            if (! skipAddToCreatedList)
+            if (!skipAddToCreatedList)
             {
                 Created.Add(obj);
             }

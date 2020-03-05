@@ -1,6 +1,7 @@
 ﻿using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ShopifySharp.Filters;
 using ShopifySharp.Infrastructure;
 
 namespace ShopifySharp
@@ -21,34 +22,22 @@ namespace ShopifySharp
         /// Gets a count of all of the shop's transactions.
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
-        /// <returns>The count of all fulfillments for the shop.</returns>
+        /// <remarks>
+        /// According to Shopify's documentation, this endpoint does not currently support any additional filter parameters for counting.
+        /// </remarks>
         public virtual async Task<int> CountAsync(long orderId)
         {
-            var req = PrepareRequest($"orders/{orderId}/transactions/count.json");
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>($"orders/{orderId}/transactions/count.json", "count");
         }
 
         /// <summary>
         /// Gets a list of up to 250 of the shop's transactions.
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
-        /// <param name="sinceId">Filters the results to after the specified id.</param>
-        /// <returns>The list of transactions.</returns>
-        public virtual async Task<IEnumerable<Transaction>> ListAsync(long orderId, long? sinceId = null, bool? inShopCurrency = null)
+        /// <param name="filter">Options for filtering the list.</param>
+        public virtual async Task<IEnumerable<Transaction>> ListAsync(long orderId, TransactionListFilter filter = null)
         {
-            var req = PrepareRequest($"orders/{orderId}/transactions.json");
-
-            if (sinceId.HasValue)
-            {
-                req.QueryParams.Add("since_id", sinceId.Value);
-            }
-            if (inShopCurrency.HasValue)
-            {
-                req.QueryParams.Add("in_shop_currency", inShopCurrency.Value);
-            }
-
-            return await ExecuteRequestAsync<List<Transaction>>(req, HttpMethod.Get, rootElement: "transactions");
+            return await ExecuteGetAsync<IEnumerable<Transaction>>($"orders/{orderId}/transactions.json", "transactions", filter);
         }
 
         /// <summary>
@@ -56,22 +45,10 @@ namespace ShopifySharp
         /// </summary>
         /// <param name="orderId">The order id to which the fulfillments belong.</param>
         /// <param name="transactionId">The id of the Transaction to retrieve.</param>
-        /// <param name="fields">A comma-separated list of fields to return.</param>
-        /// <returns>The <see cref="Transaction"/>.</returns>
-        public virtual async Task<Transaction> GetAsync(long orderId, long transactionId, string fields = null, bool? inShopCurrency = null)
+        /// <param name="filter">Options for filtering the result.</param>
+        public virtual async Task<Transaction> GetAsync(long orderId, long transactionId, TransactionGetFilter filter = null)
         {
-            var req = PrepareRequest($"orders/{orderId}/transactions/{transactionId}.json");
-
-            if (!string.IsNullOrEmpty(fields))
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-            if (inShopCurrency.HasValue)
-            {
-                req.QueryParams.Add("in_shop_currency", inShopCurrency.Value);
-            }
-
-            return await ExecuteRequestAsync<Transaction>(req, HttpMethod.Get, rootElement: "transaction");
+            return await ExecuteGetAsync<Transaction>($"orders/{orderId}/transactions/{transactionId}.json", "transaction", filter);
         }
 
         /// <summary>
@@ -87,8 +64,9 @@ namespace ShopifySharp
             {
                 transaction = transaction
             });
+            var response = await ExecuteRequestAsync<Transaction>(req, HttpMethod.Post, content, "transaction");
 
-            return await ExecuteRequestAsync<Transaction>(req, HttpMethod.Post, content, "transaction");
+            return response.Result;
         }
     }
 }

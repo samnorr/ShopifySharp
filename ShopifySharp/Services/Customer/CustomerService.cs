@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Net.Http;
+﻿using System.Net.Http;
 using ShopifySharp.Filters;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Lists;
 
 namespace ShopifySharp
 {
@@ -12,9 +12,6 @@ namespace ShopifySharp
     /// </summary>
     public class CustomerService : ShopifyService
     {
-        /// <summary>
-        /// Creates a new instance of <see cref="CustomerService" />.
-        /// </summary>
         /// <param name="myShopifyUrl">The shop's *.myshopify.com URL.</param>
         /// <param name="shopAccessToken">An API access token for the shop.</param>
         public CustomerService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
@@ -22,28 +19,28 @@ namespace ShopifySharp
         /// <summary>
         /// Gets a count of all of the shop's customers.
         /// </summary>
-        /// <returns>The count of all customers for the shop.</returns>
+        /// <remarks>
+        /// According to Shopify's documentation, the count endpoint does not support any parameters. 
+        /// </remarks>
         public virtual async Task<int> CountAsync()
         {
-            var req = PrepareRequest("customers/count.json");
-
-            return await ExecuteRequestAsync<int>(req, HttpMethod.Get, rootElement: "count");
+            return await ExecuteGetAsync<int>($"customers/count.json", "count");
         }
 
         /// <summary>
         /// Gets a list of up to 250 of the shop's customers.
         /// </summary>
-        /// <returns></returns>
-        public virtual async Task<IEnumerable<Customer>> ListAsync(ListFilter filter = null)
+        public virtual async Task<ListResult<Customer>> ListAsync(ListFilter<Customer> filter = null)
         {
-            var req = PrepareRequest("customers.json");
+            return await ExecuteGetListAsync("customers.json", "customers", filter);
+        }
 
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Customer>>(req, HttpMethod.Get, rootElement: "customers");
+        /// <summary>
+        /// Gets a list of up to 250 of the shop's customers.
+        /// </summary>
+        public virtual async Task<ListResult<Customer>> ListAsync(CustomerListFilter filter)
+        {
+            return await ListAsync(filter?.AsListFilter());
         }
 
         /// <summary>
@@ -54,39 +51,25 @@ namespace ShopifySharp
         /// <returns>The <see cref="Customer"/>.</returns>
         public virtual async Task<Customer> GetAsync(long customerId, string fields = null)
         {
-            var req = PrepareRequest($"customers/{customerId}.json");
-
-            if (string.IsNullOrEmpty(fields) == false)
-            {
-                req.QueryParams.Add("fields", fields);
-            }
-
-            return await ExecuteRequestAsync<Customer>(req, HttpMethod.Get, rootElement: "customer");
+            return await ExecuteGetAsync<Customer>($"customers/{customerId}.json", "customer", fields);
         }
 
         /// <summary>
         /// Searches through a shop's customers for the given search query. NOTE: Assumes the <paramref name="query"/> and <paramref name="order"/> strings are not encoded.
         /// </summary>
-        /// <param name="query">The (unencoded) search query, in format of 'Bob country:United States', which would search for customers in the United States with a name like 'Bob'.</param>
-        /// <param name="order">An (unencoded) optional string to order the results, in format of 'field_name DESC'. Default is 'last_order_date DESC'.</param>
-        /// <param name="filter">Options for filtering the results.</param>
-        /// <returns>A list of matching customers.</returns>
-        public virtual async Task<IEnumerable<Customer>> SearchAsync(string query, string order = null, ListFilter filter = null)
+        /// <param name="filter">Options for filtering the result.</param>
+        public virtual async Task<ListResult<Customer>> SearchAsync(ListFilter<Customer> filter)
         {
-            var req = PrepareRequest("customers/search.json");
-            req.QueryParams.Add("query", query);
+            return await ExecuteGetListAsync("customers/search.json", "customers", filter);
+        }
 
-            if (!string.IsNullOrEmpty(order))
-            {
-                req.QueryParams.Add("order", order);
-            }
-
-            if (filter != null)
-            {
-                req.QueryParams.AddRange(filter.ToParameters());
-            }
-
-            return await ExecuteRequestAsync<List<Customer>>(req, HttpMethod.Get, rootElement: "customers");
+        /// <summary>
+        /// Searches through a shop's customers for the given search query. NOTE: Assumes the <paramref name="query"/> and <paramref name="order"/> strings are not encoded.
+        /// </summary>
+        /// <param name="filter">Options for filtering the result.</param>
+        public virtual async Task<ListResult<Customer>> SearchAsync(CustomerSearchListFilter filter)
+        {
+            return await SearchAsync(filter?.AsListFilter());
         }
 
         /// <summary>
@@ -113,7 +96,8 @@ namespace ShopifySharp
                 customer = body
             });
 
-            return await ExecuteRequestAsync<Customer>(req, HttpMethod.Post, content, "customer");
+            var response = await ExecuteRequestAsync<Customer>(req, HttpMethod.Post, content, "customer");
+            return response.Result;
         }
 
         /// <summary>
@@ -141,7 +125,8 @@ namespace ShopifySharp
                 customer = body
             });
 
-            return await ExecuteRequestAsync<Customer>(req, HttpMethod.Put, content, "customer");
+            var response = await ExecuteRequestAsync<Customer>(req, HttpMethod.Put, content, "customer");
+            return response.Result;
         }
 
         /// <summary>
@@ -171,7 +156,8 @@ namespace ShopifySharp
                 customer_invite = invite
             });
 
-            return await ExecuteRequestAsync<CustomerInvite>(req, HttpMethod.Post, content, "customer_invite");
+            var response = await ExecuteRequestAsync<CustomerInvite>(req, HttpMethod.Post, content, "customer_invite");
+            return response.Result;
         }
 
         /// <summary>
@@ -185,12 +171,25 @@ namespace ShopifySharp
         public virtual async Task<string> GetAccountActivationUrl(long customerid)
         {
             var req = PrepareRequest($"customers/{customerid}/account_activation_url.json");
-
             var response = await ExecuteRequestAsync(req, HttpMethod.Post);
 
-            return response.SelectToken("account_activation_url").ToString();
-
+            return response.Result.SelectToken("account_activation_url").ToString();
         }
 
+        /// <summary>
+        /// Gets a list of the customer's orders.
+        /// </summary>
+        /// <param name="customerId">The id of the customer to list orders for.</param>
+        /// <param name="filter">Options for filtering the result.</param>
+        /// <remarks>
+        /// Previously this was part of the OrderService, and was documented under the Orders API in Shopify.
+        /// Shopify appears to have moved it to the Customers API.
+        /// https://shopify.dev/docs/admin-api/rest/reference/customers/customer#orders-2020-01
+        /// This list does not appear to be paginated. 
+        /// </remarks>
+        public virtual async Task<IEnumerable<Order>> ListOrdersForCustomerAsync(long customerId, CustomerOrderListFilter filter = null)
+        {
+            return await ExecuteGetAsync<List<Order>>($"customers/{customerId}/orders.json", "orders", filter);
+        }
     }
 }

@@ -29,32 +29,35 @@ namespace ShopifySharp.Tests
         {
             var list = await Fixture.Service.ListAsync();
 
-            Assert.True(list.Count() > 0);
+            Assert.True(list.Items.Count() > 0);
         }
 
         [Fact]
         public async Task Lists_Events_For_Subjects()
         {
             // Get an order id
-            long orderId = (await new OrderService(Utils.MyShopifyUrl, Utils.AccessToken).ListAsync(new OrderFilter()
+            var orderService = new OrderService(Utils.MyShopifyUrl, Utils.AccessToken);
+            orderService.SetExecutionPolicy(new SmartRetryExecutionPolicy(false));
+            
+            long orderId = (await orderService.ListAsync(new OrderListFilter()
             {
                 Limit = 1
-            })).First().Id.Value;
+            })).Items.First().Id.Value;
             string subject = "Order";
             var list = await Fixture.Service.ListAsync(orderId, subject);
 
             Assert.NotNull(list);
-            Assert.All(list, e => Assert.Equal(subject, e.SubjectType));
+            Assert.All(list.Items, e => Assert.Equal(subject, e.SubjectType));
         }
 
         [Fact]
         public async Task Gets_Events()
         {
-            var list = await Fixture.Service.ListAsync(options: new EventListFilter()
+            var list = await Fixture.Service.ListAsync(filter: new EventListFilter()
             {
                 Limit = 1
             });
-            var evt = await Fixture.Service.GetAsync(list.First().Id.Value);
+            var evt = await Fixture.Service.GetAsync(list.Items.First().Id.Value);
 
             Assert.NotNull(evt);
             Assert.NotNull(evt.Author);
@@ -70,6 +73,12 @@ namespace ShopifySharp.Tests
     {
         public EventService Service { get; } = new EventService(Utils.MyShopifyUrl, Utils.AccessToken);
 
-        public List<Event> Created { get; } = new List<Event>();
+        public Task InitializeAsync()
+        {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy(false));
+
+            return Task.CompletedTask;
+        }
     }
 }
+

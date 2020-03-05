@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using ShopifySharp.Enums;
-using ShopifySharp.Converters;
 
 namespace ShopifySharp
 {
@@ -35,8 +33,8 @@ namespace ShopifySharp
         /// <summary>
         /// The weight of the product variant in grams.
         /// </summary>
-        [JsonProperty("grams"), JsonConverter(typeof(NullToZeroConverter))]
-        public int? Grams { get; set; }
+        [JsonProperty("grams")]
+        public long? Grams { get; set; }
 
         /// <summary>
         /// Specifies whether or not customers are allowed to place an order for a product variant when it's out of stock. Known values are 'deny' and 'continue'.
@@ -136,22 +134,6 @@ namespace ShopifySharp
         public int? InventoryQuantity { get; set; }
 
         /// <summary>
-        /// The original stock level the client believes the product variant has.
-        /// This should be sent to avoid a race condition when the item being adjusted is simultaneously sold online.
-        /// </summary>
-        [JsonProperty("old_inventory_quantity")]
-        [Obsolete("Use the Inventory Level endpoint instead")]
-        public int? OldInventoryQuantity { get; set; }
-
-        /// <summary>
-        /// Instead of sending a new and old value for inventory an adjustment value can be sent.
-        /// If an adjustment value is sent it will take priority.
-        /// </summary>
-        [JsonProperty("inventory_quantity_adjustment")]
-        [Obsolete("Use the Inventory Level endpoint instead")]
-        public int? InventoryQuantityAdjustment { get; set; }
-
-        /// <summary>
         /// The unique numeric identifier for one of the product's images.
         /// </summary>
         [JsonProperty("image_id", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -171,10 +153,16 @@ namespace ShopifySharp
 
         /// <summary>
         /// Additional metadata about the <see cref="ProductVariant"/>. Note: This is not naturally returned with a <see cref="ProductVariant"/> response, as
-        /// Shopify will not return <see cref="ProductVariant"/> metafields unless specified. Instead, you need to query metafields with <see cref="MetaFieldService"/>. 
+        /// Shopify will not return <see cref="ProductVariant"/> metafields unless specified. Instead, you need to query metafields with <see cref="MetaFieldService"/>.
         /// Uses include: Creating, updating, & deserializing webhook bodies that include them.
         /// </summary>
         [JsonProperty("metafields")]
         public IEnumerable<MetaField> Metafields { get; set; }
+
+        /// <summary>
+        /// A list of the variant's presentment prices and compare-at prices in each of the shop's enabled presentment currencies
+        /// </summary>
+        [JsonProperty("presentment_prices")]
+        public IEnumerable<PresentmentPrice> PresentmentPrices { get; set; }
     }
 }

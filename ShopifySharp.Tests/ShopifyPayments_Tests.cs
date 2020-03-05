@@ -12,34 +12,51 @@ namespace ShopifySharp.Tests
     [Trait("Category", "Shopify payments")]
     public class ShopifyPayments_Tests
     {
-        private ShopifyPaymentsService _Service { get; } = new ShopifyPaymentsService(Utils.MyShopifyUrl, Utils.AccessToken);
+        ShopifyPaymentsService Service { get; } = new ShopifyPaymentsService(Utils.MyShopifyUrl, Utils.AccessToken);
+
+        public ShopifyPayments_Tests()
+        {
+            Service.SetExecutionPolicy(new SmartRetryExecutionPolicy());
+        }
 
         [Fact]
         public async Task GetBalance()
         {
-            var balances = await _Service.GetBalanceAsync();
-            Assert.NotNull(balances);
+            if (await Service.IsShopifyPaymentApiEnabledAsync())
+            {
+                var balances = await Service.GetBalanceAsync();
+                Assert.NotNull(balances);
+            }
         }
 
         [Fact]
         public async Task GetPayouts()
         {
-            var payouts = await _Service.ListPayoutsAsync();
-            Assert.NotNull(payouts);
+            if (await Service.IsShopifyPaymentApiEnabledAsync())
+            {
+                var payouts = await Service.ListPayoutsAsync();
+                Assert.NotNull(payouts);
+            }
         }
 
         [Fact]
         public async Task GetDisputes()
         {
-            var disputes = await _Service.ListDisputesAsync();
-            Assert.NotNull(disputes);
+            if (await Service.IsShopifyPaymentApiEnabledAsync())
+            {
+                var disputes = await Service.ListDisputesAsync();
+                Assert.NotNull(disputes);
+            }
         }
 
         [Fact]
         public async Task GetTransactions()
         {
-            var transactions = await _Service.ListTransactionsAsync();
-            Assert.NotNull(transactions);
+            if (await Service.IsShopifyPaymentApiEnabledAsync())
+            {
+                var transactions = await Service.ListTransactionsAsync();
+                Assert.NotNull(transactions);
+            }
         }
     }
 }
