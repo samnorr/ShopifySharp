@@ -31,8 +31,10 @@ namespace ShopifySharp.Tests
         public async Task Lists_Variants()
         {
             var list = await Fixture.Service.ListAsync(Fixture.ProductId);
+            Assert.True(list.Items.Any());
 
-            Assert.True(list.Items.Count() > 0);
+            list = await Fixture.Service.ListAsync(null);
+            Assert.True(list.Items.Any());
         }
 
         [Fact]
