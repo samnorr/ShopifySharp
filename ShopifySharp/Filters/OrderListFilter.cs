@@ -10,6 +10,12 @@ namespace ShopifySharp.Filters
     public class OrderListFilter : ListFilter<Order>
     {
         /// <summary>
+        /// Restricts results to those with the given order name. Note that when specifying name, "#" must be dropped.
+        /// </summary>
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        /// <summary>
         /// Restricts results to those with the given status. Known values are "open", "closed", "cancelled" and "any".
         /// </summary>
         [JsonProperty("status")]
